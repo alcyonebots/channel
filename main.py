@@ -2,7 +2,6 @@ import time
 from pyrogram import Client
 from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid, PhoneCodeExpired
 
-
 # Function to login to Telegram using phone number and 2FA if necessary
 def login_to_telegram():
     phone_number = input("Enter your phone number (with country code, e.g., +1): ")  # Get phone number from user input
@@ -33,7 +32,6 @@ def login_to_telegram():
 
     return app
 
-
 # Function to create channels or supergroups with custom titles
 def create_channel_or_group(client):
     print("Menu:")
@@ -57,17 +55,14 @@ def create_channel_or_group(client):
         print(f"Creating {option} '{title}' with title '{title}'...")
 
         if option == 'channel':
-            # Corrected the call to create_channel with the right parameters
-            client.create_channel(title=title, description='', is_private=True)
+            # Create a new broadcast channel
+            client.create_channel(title=title, description='')
             print(f"Channel '{title}' created successfully!")
 
         elif option == 'supergroup':
-            # Create a supergroup by first creating a normal group and then promoting it to a supergroup
-            group = client.create_group(title=title, description='', is_private=True)
-            # Promote the group to supergroup
-            group.promote_to_supergroup()
+            # Create a new supergroup
+            client.create_supergroup(title=title, description='')
             print(f"Supergroup '{title}' created successfully!")
-
 
 # Start the login process
 client = login_to_telegram()

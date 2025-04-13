@@ -1,70 +1,85 @@
+import time
 from pyrogram import Client
-import asyncio
+from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid, PhoneCodeExpired
+from pyrogram.types import ChatPermissions
 
-api_id = 123456   # Replace with your API ID
-api_hash = "your_api_hash"  # Replace with your API Hash
-session_name = "session"
 
-# Phone number for login
-phone_number = "+1234567890"  # Replace with your phone number
+# Function to login to Telegram using phone number and 2FA if necessary
+def login_to_telegram():
+    phone_number = input("Enter your phone number (with country code, e.g., +1): ")  # Get phone number from user input
 
-app = Client(session_name, api_id=api_id, api_hash=api_hash, phone_number=phone_number)
+    app = Client("my_account", phone_number=phone_number)
 
-async def send_file_to_user(file_path, user_id):
-    # Send the links file to @voniq's DM
-    await app.send_document(user_id, file_path)
+    try:
+        app.start()  # Starts the client
+        print("Logged in successfully!")
 
-async def main():
-    async with app:
-        # Login Process
-        if not app.is_connected:
-            print("Logging in...")
-            await app.start()
-
-        # Check for 2FA
-        if await app.is_user_authorized():
-            print("Already logged in.")
+        # Check if 2FA (two-step verification) is enabled
+        if app.is_user_authorized():
+            print("You are already authorized!")
         else:
-            # The app will automatically handle OTP and 2FA
-            print("Logging in via phone number...")
-            await app.sign_in(phone_number)
+            print("Sending OTP...")
+            time.sleep(2)
+            otp = input("Enter the OTP you received: ")
+            try:
+                # Try to sign in with OTP
+                app.sign_in(phone_number, otp)
+            except PhoneCodeInvalid:
+                print("Invalid OTP. Please try again.")
+                return
+            except PhoneCodeExpired:
+                print("OTP has expired. Please request a new one.")
+                return
 
-        print("What do you want to create?")
-        print("1. Private Channels")
-        print("2. Private Supergroups")
-        choice = input("Enter 1 or 2: ")
+            # If 2FA is enabled, it will ask for the password
+            if isinstance(app, SessionPasswordNeeded):
+                password = input("Enter your 2FA password: ")
+                app.check_password(password)
 
-        count = int(input("How many to create? "))
+            print("Logged in successfully!")
 
-        # List to store the created links
-        links = []
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    return app
 
-        for i in range(1, count + 1):
-            if choice == "1":
-                title = f"Channel {i}"
-                # Creating a private channel (by default channels are private)
-                new_channel = await app.create_channel(title=title, description="", is_megagroup=False)
-                links.append(f"Channel {i}: https://t.me/{new_channel.username}")
-                print(f"Created Private Channel: {title}")
-            elif choice == "2":
-                title = f"Group {i}"
-                # Creating a private supergroup (is_megagroup=True means it's a supergroup)
-                new_group = await app.create_channel(title=title, description="", is_megagroup=True)
-                links.append(f"Group {i}: https://t.me/{new_group.username}")
-                print(f"Created Private Supergroup: {title}")
-            else:
-                print("Invalid choice.")
-                break
 
-        # Save the links to a file
-        with open("links.txt", "w") as f:
-            for link in links:
-                f.write(f"{link}\n")
-        
-        print("Links saved to links.txt")
+# Function to create channels or supergroups with custom titles
+def create_channel_or_group(client):
+    print("Menu:")
+    print("1. Create Channel")
+    print("2. Create Supergroup")
+    choice = input("Please choose an option (1 or 2): ").strip()
 
-        # Send the file to @voniq's DM (replace with the user ID of @voniq)
-        await send_file_to_user("links.txt", "@voniq")
+    if choice == '1':
+        option = 'channel'
+    elif choice == '2':
+        option = 'supergroup'
+    else:
+        print("Invalid choice. Exiting.")
+        return
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    # Ask for how many channels or supergroups to create
+    count = int(input(f"How many {option}s do you want to create? "))
+    
+    for i in range(count):
+        title = f"{option.capitalize()} {i + 1}"
+        print(f"Creating {option} '{title}' with title '{title}'...")
+
+        if option == 'channel':
+            client.create_channel(title=title, description='', private=True)
+        elif option == 'supergroup':
+            # Create a supergroup by first creating a normal group and then promoting it to a supergroup
+            group = client.create_group(title=title, description='', private=True)
+            # Promote the group to supergroup
+            group.promote_to_supergroup()
+            print(f"Supergroup '{title}' created successfully!")
+
+        print(f"{option.capitalize()} '{title}' created successfully!")
+
+
+# Start the login process
+client = login_to_telegram()
+
+# Proceed with creating channels or supergroups after successful login
+if client:
+    create_channel_or_group(client)

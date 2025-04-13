@@ -1,14 +1,15 @@
 import time
 from pyrogram import Client
 from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid, PhoneCodeExpired
-from pyrogram.types import ChatPermissions
 
 
 # Function to login to Telegram using phone number and 2FA if necessary
 def login_to_telegram():
     phone_number = input("Enter your phone number (with country code, e.g., +1): ")  # Get phone number from user input
+    api_id = '23786344'  # Replace with your API ID
+    api_hash = '90decd3d66ff2bbb1d0ade8bde0b71b0'  # Replace with your API Hash
 
-    app = Client("my_account", phone_number=phone_number)
+    app = Client("my_account", api_id=api_id, api_hash=api_hash, phone_number=phone_number)
 
     try:
         app.start()  # Starts the client

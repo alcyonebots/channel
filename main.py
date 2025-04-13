@@ -16,31 +16,21 @@ def login_to_telegram():
         print("Logged in successfully!")
 
         # Check if 2FA (two-step verification) is enabled
-        if app.is_user_authorized():
-            print("You are already authorized!")
-        else:
-            print("Sending OTP...")
-            time.sleep(2)
-            otp = input("Enter the OTP you received: ")
-            try:
-                # Try to sign in with OTP
-                app.sign_in(phone_number, otp)
-            except PhoneCodeInvalid:
-                print("Invalid OTP. Please try again.")
-                return
-            except PhoneCodeExpired:
-                print("OTP has expired. Please request a new one.")
-                return
-
-            # If 2FA is enabled, it will ask for the password
-            if isinstance(app, SessionPasswordNeeded):
-                password = input("Enter your 2FA password: ")
-                app.check_password(password)
-
+        if isinstance(app, SessionPasswordNeeded):
+            password = input("Enter your 2FA password: ")
+            app.check_password(password)
             print("Logged in successfully!")
-
+            
+    except PhoneCodeInvalid:
+        print("Invalid OTP. Please try again.")
+        return None
+    except PhoneCodeExpired:
+        print("OTP has expired. Please request a new one.")
+        return None
     except Exception as e:
         print(f"An error occurred: {e}")
+        return None
+
     return app
 
 
@@ -67,15 +57,16 @@ def create_channel_or_group(client):
         print(f"Creating {option} '{title}' with title '{title}'...")
 
         if option == 'channel':
-            client.create_channel(title=title, description='', private=True)
+            # Corrected the call to create_channel with the right parameters
+            client.create_channel(title=title, description='', is_private=True)
+            print(f"Channel '{title}' created successfully!")
+
         elif option == 'supergroup':
             # Create a supergroup by first creating a normal group and then promoting it to a supergroup
-            group = client.create_group(title=title, description='', private=True)
+            group = client.create_group(title=title, description='', is_private=True)
             # Promote the group to supergroup
             group.promote_to_supergroup()
             print(f"Supergroup '{title}' created successfully!")
-
-        print(f"{option.capitalize()} '{title}' created successfully!")
 
 
 # Start the login process
